@@ -1,0 +1,707 @@
+{
+  "name": "youtube",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d39d40d4-b25c-47bc-a7b5-6ff85ced4d6d",
+              "name": "=language",
+              "type": "string",
+              "value": "Turkish"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7ac9cebe-73c7-491b-a95e-81242ce53d82",
+      "name": "LANG",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        896,
+        560
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "youtube-analiz",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7799f4ae-54c8-48fd-9fc1-a269cd311db7",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -464,
+        384
+      ],
+      "webhookId": "8c06c4fa-f70d-49bb-80ad-0fa1dd6238d5",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5c69bd4a-cffc-4efe-a733-8905da84b4d4",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $('Webhook').first().json.body?.email || $('Webhook').first().json.email || 'kamilc17@hotmail.com' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b9cfe0f2-d244-48d8-8bf8-c8edee14f305",
+      "name": "Email send",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        560
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "jsCode": "let pag, manual;\ntry {\n pag = $('PRODUCT').first()?.json?.objetive;\n} catch (e) {\n pag = undefined;\n}\ntry {\n manual = $('Webhook').first()?.json?.query?.objetive;\n} catch (e) {\n manual = undefined;\n}\n// Si pag tiene valor, usarlo; si no, usar manual\nconst objetive_scan = pag ? pag : manual;\n\nreturn [{ objetive_scan }];"
+      },
+      "id": "fa0a0639-8e03-4e56-a4e2-9193661b6bf6",
+      "name": "Method detect",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        448,
+        560
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recibe el objetivo del campo \"objetive\"\nconst query = $json.objetive_scan || \"\";\n\n// Reemplaza todos los espacios (uno o más) por \"+\"\nconst urlparam = query.trim().replace(/\\s+/g, '+');\n\nreturn [{ urlparam }];\n"
+      },
+      "id": "bd3a85d9-758d-408d-b2c3-bfda576f6afb",
+      "name": "Code1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        560
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5c69bd4a-cffc-4efe-a733-8905da84b4d4",
+              "name": "apify_api",
+              "type": "string",
+              "value": "apify_api_QH12TE2IIXsqjvsWekWhAOhKFlaJQb3uldi0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d635776-b732-42f5-97d8-6e56685be7f1",
+      "name": "Apify API",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        0,
+        560
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -32,
+        800
+      ],
+      "id": "fc05ad45-723a-481b-bb40-d746bda730a9",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Los textos a continuación son reviews de uno o varios vídeos sobre el producto {{ $node[\"PRODUCT\"].json[\"product\"] }}\n\nAnaliza y resume los puntos fuertes (aspectos positivos, ventajas, lo que más valoran los usuarios) y los puntos débiles (críticas, inconvenientes, problemas señalados) de este producto, basándote únicamente en la información proporcionada en las reviews.\n\nDevuelve el resultado en formato markdown con dos apartados claros:\n\nStrengths (o texto segun el idioma seleccionado)\n\nWeak Points (o texto segun el idioma seleccionado)\n\n(otros puntos que veas necesarios añadir)\n\nPara finalizar haz una puntuación para ti del 0 al 10 y porqué en calidad precio (el precio solo si se a mencionado en el video).\nIMPORTANTE: No incluyas opiniones propias ni información que no esté en las reviews, TAMPOCO TE INVENTES NADA.\n\nIMPORTANTE: RESPONDE EN ESTE IDIOMA: {{ $node[\"LANG\"].json[\"language\"] }}",
+              "role": "system"
+            },
+            {
+              "content": "=LAS REVIEWS SON (SEPARADA CADA REVIEW CON \"OTHER VIDEO\"): {{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        688,
+        784
+      ],
+      "id": "6fbb7496-ab47-4db3-865e-409e8a33a808",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "3eMUeLzQQvIGXcuo",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d39d40d4-b25c-47bc-a7b5-6ff85ced4d6d",
+              "name": "product",
+              "type": "string",
+              "value": "=={{ $('Webhook').first().json.body?.product || $('Webhook').first().json.product }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9c4a341d-b9a5-42dd-9c4c-5f26634c321e",
+      "name": "PRODUCT",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -224,
+        560
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "maxItems": 3
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        800
+      ],
+      "id": "cbcb26c8-494d-4cb2-81dd-95b650493536",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "259f6c24-04ae-42a1-ab2f-cea66c01efc8",
+              "name": "yt_to_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        784
+      ],
+      "id": "93cfab4a-0639-47d8-bc86-16c3427af3c3",
+      "name": "Rename",
+      "notes": "opcional but the output is clearer and more polished"
+    },
+    {
+      "parameters": {
+        "jsCode": "let texts = $input.all().map(item => item.json.yt_to_text || \"\");\nlet merged = texts.filter(t => t && typeof t === \"string\").join('\\n\\nOTHER VIDEO TEXT:\\n\\n');\nreturn [{ json: { output: merged } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        784
+      ],
+      "id": "ef446c9f-c6bf-45d8-8fb3-199597ab91a4",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true,\n  \"product\": \"{{ $('PRODUCT').first().json.product }}\",\n  \"message\": \"YouTube analizi tamamlandı, email gönderildi\",\n  \"analysis_sent_to\": \"{{ $('Email send').first().json.email }}\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1344,
+        608
+      ],
+      "id": "603c7114-de72-4892-99fb-ceedf76bd5b9",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "## IMPORTANT Configuration\nFor the workflow to work, you must enter 3 APIs:\n- ChatGPT (free for new users)\n- Email (optional for sending)\n- Apify (required and free)\n\nURL: https://console.apify.com/settings/integrations\n\nThe Apify API is as simple as creating an account, going to \"https://console.apify.com/settings/integrations\" and you will be able to view it (registration required).",
+        "height": 252,
+        "width": 980,
+        "color": 3
+      },
+      "id": "d55f9f53-ebe4-4601-ac05-0474b7f3ecb9",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -64
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/grow_media~youtube-search-api/run-sync-get-dataset-items?token={{ $node[\"Apify API\"].json[\"apify_api\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n \"maxResults\": 10,\n \"q\": \"{{ $node[\"PRODUCT\"].json[\"product\"] }}\",\n \"useFilters\": false\n}",
+        "options": {}
+      },
+      "id": "091ac89d-a6e3-4d15-8ab4-45eadc23cc02",
+      "name": "Agent 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -464,
+        800
+      ],
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
+      "notes": "Agents can also fail due to maintenance or API limits being reached."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/acts/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items?token={{ $node[\"Apify API\"].json[\"apify_api\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n \"videoUrl\": \"{{ $json.url }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        96,
+        960
+      ],
+      "id": "e82e9777-499b-4691-a27d-f08705384631",
+      "name": "Agent 2",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
+      "notes": "Agents can also fail due to maintenance or API limits being reached."
+    },
+    {
+      "parameters": {
+        "content": "## Welcome!\nThank you so much for trusting this workflow and supporting its creator!\nYour support allows us to continue developing innovative solutions like this one, designed to save you time and help you make better decisions for your business.\nThis workflow automates the collection and analysis of product reviews in an advanced way on YouTube.\nIt's an innovative workflow because it attempts to view reviews from a different perspective, something that until now, thanks to AI and other advances, has never been possible.",
+        "height": 284,
+        "width": 380,
+        "color": 5
+      },
+      "id": "13999545-9564-4951-aaa6-2add521fc6d5",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -912,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        560
+      ],
+      "id": "9c279943-2412-4cd6-b62c-571ea766f7d7",
+      "name": "Manual",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## How It Works (P1)\n\nClick-to-click (manual) or workflow launch modes are supported. For workflows, the expected parameter is \"?product=\". Next, you must enter your goal. If the goal contains spaces, you must replace them with \"+\" (this only applies when using a webhook).\nFor example, the result should be: \"?objective=opinions+restaurant+fcb+barcelona\".\n\nPart 1: User Configuration\nIn this section, you enter the Apify API key and specify the product goal to be analyzed.\nNext, you will find the \"Email Sending\" section, where you can configure the recipient of the final report.\nAlso noteworthy is the \"Language\" node: it is used to configure the desired language for the analysis report, which will be returned in that language.\nThere is also a script to generate a user agent (UA) for HTTP GET requests. This script can be modified if necessary, but in most cases, it does not require any changes.",
+        "height": 296,
+        "width": 980,
+        "color": 6
+      },
+      "id": "4bf451b0-6451-44c6-927d-097e28cc826e",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        224
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Basic Support\noriolrtollant3@gmail.com",
+        "height": 100,
+        "color": 5
+      },
+      "id": "effcd77f-8e18-4773-8abd-fc20fe019276",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -784,
+        752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## API INFO AND FREE (7 days)\nI will keep my Apify API for a few days after your purchase until you have yours so you can use it.\n**API:** apify_api_eHDZgurPY2fFXgkU5H7evY7W1SOhUc1ozOTJ",
+        "height": 140,
+        "width": 520
+      },
+      "id": "98589161-be80-486f-8891-e66e036cdf2d",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        912
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## How It Works (P2)\nIn this second part, the role of the agents in the Apify call begins.\n- First agent: This agent is responsible for scraping and obtaining the YT links related to the written product title.\n- Second agent: This agent is responsible for transforming the video's audio into text, then grouping it and sending it to chatgtp for analysis (some videos don't have this feature, so it may return \"null\").\n\nOther configurations:\n- Limit: Use limit to set a maximum number of videos to extract, so as not to consume too many credits. I recommend 3. More than 3 could exceed the response limit if done via webhook or consume too many credits.\n- Loop: The loop is used to iterate through the links set by \"limit\".",
+        "height": 264,
+        "width": 980,
+        "color": 6
+      },
+      "id": "eba9b50d-1189-4c33-8c48-965ef5da5356",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        992
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "=# {{ $node[\"PRODUCT\"].json[\"product\"] }}\n\n{{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        784
+      ],
+      "id": "823573cb-c2a0-4fb4-9205-cc5dc786c477",
+      "name": "Markdown to HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Email send\"].json[\"email\"] }}",
+        "subject": "=Review {{ $node[\"PRODUCT\"].json[\"product\"] }}",
+        "message": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1376,
+        768
+      ],
+      "id": "7d5aaa83-8a89-4116-a166-d9ba147648fa",
+      "name": "Send Review",
+      "webhookId": "2f70962f-d4ed-4aa8-8783-157c884910aa",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HSbvzrjiW1CAEzBO",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Agents can also fail due to maintenance (rarely) or due to API limits being reached.\n[INFO] If this is your first time running the workflow, check the API and use the one I mentioned for testing."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        992
+      ],
+      "id": "c95331b3-2c56-4d0a-a978-5c6e540b6eca",
+      "name": "Error why"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Email send\"].json[\"email\"] }}",
+        "subject": "=Review {{ $node[\"PRODUCT\"].json[\"product\"] }}",
+        "message": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1360,
+        960
+      ],
+      "id": "934cda09-0590-4776-be92-99ee132c3616",
+      "name": "Send a message",
+      "webhookId": "5d1baf3f-1449-49b8-9a20-8c9ec6d46dba",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HSbvzrjiW1CAEzBO",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "LANG": {
+      "main": [
+        [
+          {
+            "node": "Agent 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PRODUCT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email send": {
+      "main": [
+        [
+          {
+            "node": "Method detect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Method detect": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "LANG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify API": {
+      "main": [
+        [
+          {
+            "node": "Email send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Rename",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PRODUCT": {
+      "main": [
+        [
+          {
+            "node": "Apify API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 1": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error why",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual": {
+      "main": [
+        [
+          {
+            "node": "PRODUCT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1766a7d1-30c0-48b0-b115-9fb3904cb7ed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef1dc0d0b8700248f6042b57c77ac49c61b99264378345faece8d7810e91b2ff"
+  },
+  "id": "o7ndyvaNUcoDw5wo",
+  "tags": []
+}
